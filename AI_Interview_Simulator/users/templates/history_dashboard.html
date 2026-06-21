@@ -1,0 +1,422 @@
+{% extends "base_with_nav.html" %}
+
+{% block title %}Dashboard - AI Interview Simulator{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+    }
+    
+    .dashboard-header {
+        margin-bottom: 2rem;
+    }
+    
+    .dashboard-header h1 {
+        color: #1a73e8;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dashboard-header p {
+        color: #666;
+    }
+    
+    .dashboard-controls {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+    
+    .btn-secondary {
+        background-color: #f1f3f4;
+        color: #1a73e8;
+        border: 1px solid #ddd;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e8eaed;
+    }
+    
+    .btn-secondary.active {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        color: #1a73e8;
+        font-weight: bold;
+    }
+    
+    .table-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    thead {
+        background-color: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+    }
+    
+    th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        color: #333;
+    }
+    
+    tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .score-badge {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .score-badge.good {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+    
+    .score-badge.fair {
+        background-color: #fff3e0;
+        color: #e65100;
+    }
+    
+    .score-badge.poor {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+    
+    .action-links {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .action-link {
+        padding: 0.4rem 0.8rem;
+        background-color: #1a73e8;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        transition: background-color 0.3s;
+    }
+    
+    .action-link:hover {
+        background-color: #1557b0;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .empty-state h2 {
+        color: #1a73e8;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+        border-left: 4px solid;
+    }
+    
+    .alert-error {
+        background-color: #ffebee;
+        color: #c62828;
+        border-left-color: #d32f2f;
+    }
+    
+    .alert-info {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        border-left-color: #1a73e8;
+    }
+    
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #1a73e8;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    .filter-group {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    select {
+        padding: 0.5rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: white;
+        cursor: pointer;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Interview Dashboard</h1>
+        <p>Track your interview practice progress</p>
+    </div>
+    
+    <div id="alertContainer"></div>
+    
+    <div class="dashboard-controls">
+        <a href="/interview/setup/" class="btn btn-primary">New Interview</a>
+        <select id="roleFilter" class="btn btn-secondary" onchange="filterHistoryByRole()">
+            <option value="">All Roles</option>
+            <option value="python">Python</option>
+            <option value="django">Django</option>
+            <option value="fullstack">Full Stack</option>
+            <option value="hr">HR</option>
+        </select>
+        <select id="difficultyFilter" class="btn btn-secondary" onchange="filterHistoryByDifficulty()">
+            <option value="">All Difficulties</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+        </select>
+    </div>
+    
+    <div id="statsSection" style="display: none;">
+        <div class="stats-grid" id="statsGrid"></div>
+    </div>
+    
+    <div id="loadingState" class="alert alert-info">
+        Loading interview history... <span class="loading"></span>
+    </div>
+    
+    <div id="historyContent" style="display: none;">
+        <div id="tableContainer"></div>
+        
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <h2>No Interviews Yet</h2>
+            <p>Start your first interview to see your progress here</p>
+            <a href="/interview/setup/" class="btn btn-primary">Start Interview</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let allInterviews = [];
+    
+    async function loadHistory() {
+        const token = localStorage.getItem('access_token');
+        
+        if (!token) {
+            document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">You must be logged in</div>';
+            setTimeout(() => {
+                window.location.href = '/login/';
+            }, 2000);
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/interviews/', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                allInterviews = Array.isArray(data) ? data : (data.results || data.interviews || []);
+                
+                if (allInterviews.length > 0) {
+                    displayStats();
+                    displayTable(allInterviews);
+                    document.getElementById('emptyState').style.display = 'none';
+                } else {
+                    document.getElementById('emptyState').style.display = 'block';
+                    document.getElementById('tableContainer').innerHTML = '';
+                    document.getElementById('statsSection').style.display = 'none';
+                }
+                
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('historyContent').style.display = 'block';
+            } else {
+                document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">Failed to load history: ' + (data.detail || 'Unknown error') + '</div>';
+            }
+        } catch (error) {
+            document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">Error loading history: ' + error.message + '</div>';
+        }
+    }
+    
+    function displayStats() {
+        const statsGrid = document.getElementById('statsGrid');
+        document.getElementById('statsSection').style.display = 'block';
+        
+        const totalInterviews = allInterviews.length;
+        const avgScore = allInterviews.length > 0 
+            ? (allInterviews.reduce((sum, i) => sum + (i.score || 0), 0) / allInterviews.length).toFixed(1)
+            : 0;
+        const bestScore = allInterviews.length > 0 
+            ? Math.max(...allInterviews.map(i => i.score || 0))
+            : 0;
+        
+        const roles = new Set(allInterviews.map(i => i.role));
+        
+        let html = '';
+        html += '<div class="stat-card"><div class="stat-label">Total Interviews</div><div class="stat-value">' + totalInterviews + '</div></div>';
+        html += '<div class="stat-card"><div class="stat-label">Average Score</div><div class="stat-value">' + avgScore + '</div></div>';
+        html += '<div class="stat-card"><div class="stat-label">Best Score</div><div class="stat-value">' + bestScore + '</div></div>';
+        html += '<div class="stat-card"><div class="stat-label">Roles Practiced</div><div class="stat-value">' + roles.size + '</div></div>';
+        
+        statsGrid.innerHTML = html;
+    }
+    
+    function displayTable(interviews) {
+        const tableContainer = document.getElementById('tableContainer');
+        
+        if (interviews.length === 0) {
+            document.getElementById('emptyState').style.display = 'block';
+            tableContainer.innerHTML = '';
+            return;
+        }
+        
+        let html = '<div class="table-container"><table><thead><tr>';
+        html += '<th>Date</th>';
+        html += '<th>Role</th>';
+        html += '<th>Difficulty</th>';
+        html += '<th>Score</th>';
+        html += '<th>Status</th>';
+        html += '<th>Actions</th>';
+        html += '</tr></thead><tbody>';
+        
+        interviews.forEach(interview => {
+            const date = new Date(interview.created_at).toLocaleDateString();
+            const score = interview.average_score || interview.score || '-';
+            const scoreClass = score !== '-' && score >= 7 ? 'good' : (score >= 5 ? 'fair' : 'poor');
+            const status = interview.completed ? 'Completed' : 'In Progress';
+            
+            html += '<tr>';
+            html += '<td>' + date + '</td>';
+            html += '<td>' + (interview.role || '-') + '</td>';
+            html += '<td>' + (interview.difficulty || '-') + '</td>';
+            html += '<td><span class="score-badge ' + scoreClass + '">' + score + '/10</span></td>';
+            html += '<td>' + status + '</td>';
+            html += '<td><div class="action-links">';
+            
+            if (interview.completed) {
+                html += '<a href="/interview/report/?id=' + interview.id + '" class="action-link">View Report</a>';
+            }
+            
+            html += '</div></td>';
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table></div>';
+        tableContainer.innerHTML = html;
+    }
+    
+    function filterHistoryByRole() {
+        const role = document.getElementById('roleFilter').value;
+        const difficulty = document.getElementById('difficultyFilter').value;
+        
+        let filtered = allInterviews;
+        if (role) {
+            filtered = filtered.filter(i => i.role === role);
+        }
+        if (difficulty) {
+            filtered = filtered.filter(i => i.difficulty === difficulty);
+        }
+        
+        displayTable(filtered);
+    }
+    
+    function filterHistoryByDifficulty() {
+        filterHistoryByRole();
+    }
+    
+    document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "base_with_nav.html" %}
+
+{% block title %}Setup Interview - AI Interview Simulator{% endblock %}
+
+{% block extra_css %}
+<style>
+    .setup-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .setup-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .setup-header h1 {
+        color: #1a73e8;
+        margin-bottom: 0.5rem;
+    }
+    
+    .setup-header p {
+        color: #666;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        background-color: white;
+        cursor: pointer;
+        transition: border-color 0.3s;
+    }
+    
+    select:focus {
+        outline: none;
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+    }
+    
+    .form-description {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.3rem;
+    }
+    
+    .btn {
+        width: 100%;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+        margin-top: 1rem;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+        background-color: #1557b0;
+    }
+    
+    .btn-primary:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+    
+    .alert {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+        border-left: 4px solid;
+    }
+    
+    .alert-error {
+        background-color: #ffebee;
+        color: #c62828;
+        border-left-color: #d32f2f;
+    }
+    
+    .alert-success {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border-left-color: #4caf50;
+    }
+    
+    .loading {
+        display: none;
+    }
+    
+    .loading.show {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #fff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 0.5rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="setup-container">
+    <div class="setup-header">
+        <h1>Setup Your Interview</h1>
+        <p>Select the role and difficulty level for your interview</p>
+    </div>
+    
+    <div id="alertContainer"></div>
+    
+    <form id="setupForm">
+        <div class="form-group">
+            <label for="role">Interview Role</label>
+            <select id="role" name="role" required>
+                <option value="">Select a role</option>
+                <option value="python">Python Developer</option>
+                <option value="django">Django Developer</option>
+                <option value="fullstack">Full Stack Developer</option>
+                <option value="hr">HR Interview</option>
+            </select>
+            <p class="form-description">Choose the position you want to practice for</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="difficulty">Difficulty Level</label>
+            <select id="difficulty" name="difficulty" required>
+                <option value="">Select difficulty</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+            </select>
+            <p class="form-description">Choose based on your experience level</p>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <span id="startBtnText">Start Interview</span>
+            <span class="loading" id="startLoading"></span>
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('setupForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const role = document.getElementById('role').value;
+        const difficulty = document.getElementById('difficulty').value;
+        const alertContainer = document.getElementById('alertContainer');
+        const startBtn = this.querySelector('button[type="submit"]');
+        const startBtnText = document.getElementById('startBtnText');
+        const startLoading = document.getElementById('startLoading');
+        
+        alertContainer.innerHTML = '';
+        startBtn.disabled = true;
+        startBtnText.textContent = '';
+        startLoading.classList.add('show');
+        
+        const token = localStorage.getItem('access_token');
+        
+        // Original flow: rely on existing token in localStorage (no AuthManager)
+        if (!token) {
+            alertContainer.innerHTML = '<div class="alert alert-error">You must be logged in</div>';
+            startBtn.disabled = false;
+            startBtnText.textContent = 'Start Interview';
+            startLoading.classList.remove('show');
+            setTimeout(() => {
+                window.location.href = '/login/';
+            }, 1000);
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/interviews/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    role: role,
+                    difficulty: difficulty
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                localStorage.setItem('interview_id', data.id);
+                localStorage.setItem('interview_role', data.role);
+                localStorage.setItem('interview_difficulty', data.difficulty);
+                
+                alertContainer.innerHTML = '<div class="alert alert-success">Interview created! Starting...</div>';
+                setTimeout(() => {
+                    window.location.href = '/interview/session/';
+                }, 500);
+            } else {
+                alertContainer.innerHTML = '<div class="alert alert-error">' + (data.detail || 'Failed to create interview') + '</div>';
+            }
+        } catch (error) {
+            alertContainer.innerHTML = '<div class="alert alert-error">Error: ' + error.message + '</div>';
+        } finally {
+            startBtn.disabled = false;
+            startBtnText.textContent = 'Start Interview';
+            startLoading.classList.remove('show');
+        }
+    });
+</script>
+{% endblock %}

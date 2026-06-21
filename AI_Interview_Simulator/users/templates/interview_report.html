@@ -1,0 +1,407 @@
+
+{% extends "base_with_nav.html" %}
+
+{% block title %}Interview Report - AI Interview Simulator{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .report-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #eee;
+    }
+    
+    .report-header h1 {
+        color: #1a73e8;
+        margin-bottom: 0.5rem;
+    }
+    
+    .report-header p {
+        color: #666;
+    }
+    
+    .score-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .score-card {
+        background-color: #f5f5f5;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .score-card h3 {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+    }
+    
+    .score-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #1a73e8;
+    }
+    
+    .score-value.good {
+        color: #4caf50;
+    }
+    
+    .score-value.fair {
+        color: #ff9800;
+    }
+    
+    .score-value.poor {
+        color: #d32f2f;
+    }
+    
+    .feedback-section {
+        margin-bottom: 2rem;
+    }
+    
+    .feedback-header {
+        font-size: 1.3rem;
+        color: #1a73e8;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .feedback-header.strengths::before {
+        content: '✓';
+        color: #4caf50;
+        font-size: 1.5rem;
+    }
+    
+    .feedback-header.weaknesses::before {
+        content: '✗';
+        color: #d32f2f;
+        font-size: 1.5rem;
+    }
+    
+    .feedback-content {
+        background-color: #f9f9f9;
+        padding: 1.5rem;
+        border-radius: 4px;
+        border-left: 4px solid;
+        line-height: 1.6;
+        color: #333;
+    }
+    
+    .feedback-content.strengths {
+        border-left-color: #4caf50;
+    }
+    
+    .feedback-content.weaknesses {
+        border-left-color: #d32f2f;
+    }
+    
+    .questions-answers {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid #eee;
+    }
+    
+    .questions-answers h2 {
+        color: #1a73e8;
+        margin-bottom: 1.5rem;
+    }
+    
+    .qa-item {
+        margin-bottom: 2rem;
+        background-color: #f9f9f9;
+        padding: 1.5rem;
+        border-radius: 4px;
+    }
+    
+    .qa-question {
+        font-weight: bold;
+        color: #1a73e8;
+        margin-bottom: 0.5rem;
+    }
+    
+    .qa-label {
+        font-size: 0.85rem;
+        color: #666;
+        text-transform: uppercase;
+        margin-top: 1rem;
+        margin-bottom: 0.3rem;
+    }
+    
+    .qa-text {
+        color: #333;
+        line-height: 1.6;
+    }
+    
+    .qa-score {
+        color: #1a73e8;
+        font-weight: bold;
+        margin-top: 0.5rem;
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        justify-content: center;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+    
+    .btn-secondary {
+        background-color: #f1f3f4;
+        color: #1a73e8;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e8eaed;
+    }
+    
+    .alert {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+        border-left: 4px solid;
+    }
+    
+    .alert-error {
+        background-color: #ffebee;
+        color: #c62828;
+        border-left-color: #d32f2f;
+    }
+    
+    .alert-info {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        border-left-color: #1a73e8;
+    }
+    
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #1a73e8;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <div class="report-header">
+        <h1>Interview Report</h1>
+        <p>Here's your detailed performance analysis</p>
+    </div>
+    
+    <div id="alertContainer"></div>
+    
+    <div id="loadingState" class="alert alert-info">
+        Loading report... <span class="loading"></span>
+    </div>
+    
+    <div id="reportContent" style="display: none;">
+        <div class="score-section" id="scoreSection"></div>
+        
+        <div id="feedbackSection"></div>
+        
+        <div id="detailedSection"></div>
+        
+        <div class="button-group">
+            <a href="/interview/setup/" class="btn btn-primary">New Interview</a>
+            <a href="/dashboard/" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadReport() {
+        const token = localStorage.getItem('access_token');
+        const interviewId = localStorage.getItem('interview_id');
+        
+        if (!token || !interviewId) {
+            document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">Session expired. Please start a new interview.</div>';
+            setTimeout(() => {
+                window.location.href = '/interview/setup/';
+            }, 2000);
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/reports/interview/' + interviewId + '/', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+            
+            const data = await response.json();
+            console.log(data);
+            
+            if (response.ok) {
+                displayReport(data);
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('reportContent').style.display = 'block';
+            } else {
+                document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">Failed to load report: ' + (data.detail || 'Unknown error') + '</div>';
+            }
+        } catch (error) {
+            document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">Error loading report: ' + error.message + '</div>';
+        }
+    }
+    
+    function displayReport(data) {
+        displayScores(data);
+        displayFeedback(data);
+        displayDetailedAnswers(data);
+    }
+    
+    function displayScores(data) {
+        const scoreSection = document.getElementById('scoreSection');
+        let html = '';
+        
+        const overallScore = data.overall_score || data.average_score || 0;
+        const scoreClass = overallScore >= 7 ? 'good' : (overallScore >= 5 ? 'fair' : 'poor');
+        
+        html += '<div class="score-card">';
+        html += '<h3>Overall Score</h3>';
+        html += '<div class="score-value ' + scoreClass + '">' + overallScore.toFixed(1) + '/10</div>';
+        html += '</div>';
+        
+        if (data.strengths_score) {
+            html += '<div class="score-card">';
+            html += '<h3>Strengths</h3>';
+            html += '<div class="score-value" style="font-size: 1.5rem;">' + data.strengths_score + '</div>';
+            html += '</div>';
+        }
+        
+        if (data.weaknesses_score) {
+            html += '<div class="score-card">';
+            html += '<h3>Weaknesses</h3>';
+            html += '<div class="score-value" style="font-size: 1.5rem;">' + data.weaknesses_score + '</div>';
+            html += '</div>';
+        }
+        
+        scoreSection.innerHTML = html;
+    }
+    
+    function displayFeedback(data) {
+        const feedbackSection = document.getElementById('feedbackSection');
+        let html = '';
+        
+        if (data.strengths) {
+            html += '<div class="feedback-section">';
+            html += '<div class="feedback-header strengths">Key Strengths</div>';
+            html += '<div class="feedback-content strengths">' + escapeHtml(data.strengths) + '</div>';
+            html += '</div>';
+        }
+        
+        if (data.weaknesses) {
+            html += '<div class="feedback-section">';
+            html += '<div class="feedback-header weaknesses">Areas for Improvement</div>';
+            html += '<div class="feedback-content weaknesses">' + escapeHtml(data.weaknesses) + '</div>';
+            html += '</div>';
+        }
+        
+        feedbackSection.innerHTML = html;
+    }
+    
+    function displayDetailedAnswers(data) {
+        const detailedSection = document.getElementById('detailedSection');
+        
+        if (!data.answers || data.answers.length === 0) {
+            return;
+        }
+        
+        let html = '<div class="questions-answers">';
+        html += '<h2>Detailed Answers</h2>';
+        
+        data.answers.forEach((answer, index) => {
+            html += '<div class="qa-item">';
+            html += '<div class="qa-question">' + (index + 1) + '. ' + escapeHtml(answer.question) + '</div>';
+            
+            html += '<div class="qa-label">Your Answer</div>';
+            html += '<div class="qa-text">' + escapeHtml(answer.user_answer) + '</div>';
+            
+            if (answer.ideal_answer) {
+                html += '<div class="qa-label">Model Answer</div>';
+                html += '<div class="qa-text">' + escapeHtml(answer.ideal_answer) + '</div>';
+            }
+            
+            if (answer.score) {
+                html += '<div class="qa-score">Score: ' + answer.score + '/10</div>';
+            }
+            if (answer.strengths) {
+            html += '<div class="qa-label">Strengths</div>';
+                html += '<div class="qa-text">' + escapeHtml(answer.strengths) + '</div>';
+            }
+
+            if (answer.weaknesses) {
+            html += '<div class="qa-label">Weaknesses</div>';
+            html += '<div class="qa-text">' + escapeHtml(answer.weaknesses) + '</div>';
+            }
+            
+            html += '</div>';
+        });
+        
+        html += '</div>';
+        detailedSection.innerHTML = html;
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+    
+    document.addEventListener('DOMContentLoaded', loadReport);
+</script>
+{% endblock %}

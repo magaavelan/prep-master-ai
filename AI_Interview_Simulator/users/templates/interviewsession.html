@@ -1,0 +1,462 @@
+{% extends "base_with_nav.html" %}
+
+{% block title %}Interview Session - AI Interview Simulator{% endblock %}
+
+{% block extra_css %}
+<style>
+    .session-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .session-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #eee;
+    }
+    
+    .session-header h1 {
+        color: #1a73e8;
+        margin: 0;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background-color: #4caf50;
+        transition: width 0.3s;
+    }
+    
+    .question-container {
+        margin-bottom: 2rem;
+    }
+    
+    .question-text {
+        font-size: 1.2rem;
+        color: #333;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+    
+    .answer-input {
+        width: 100%;
+        min-height: 200px;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        resize: vertical;
+        transition: border-color 0.3s;
+    }
+    
+    .answer-input:focus {
+        outline: none;
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+        flex: 1;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+        background-color: #1557b0;
+    }
+    
+    .btn-primary:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+        background-color: #f1f3f4;
+        color: #1a73e8;
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+        background-color: #e8eaed;
+    }
+    
+    .btn-secondary:disabled {
+        background-color: #e8eaed;
+        color: #999;
+        cursor: not-allowed;
+    }
+    
+    .loading {
+        display: none;
+    }
+    
+    .loading.show {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    .alert {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+        border-left: 4px solid;
+    }
+    
+    .alert-error {
+        background-color: #ffebee;
+        color: #c62828;
+        border-left-color: #d32f2f;
+    }
+    
+    .alert-info {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        border-left-color: #1a73e8;
+    }
+    
+    .session-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .info-card {
+        background-color: #f5f5f5;
+        padding: 1rem;
+        border-radius: 4px;
+        text-align: center;
+    }
+    
+    .info-label {
+        font-size: 0.85rem;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 0.3rem;
+    }
+    
+    .info-value {
+        font-size: 1.3rem;
+        color: #1a73e8;
+        font-weight: bold;
+    }
+    
+    .completion-state {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .completion-state h2 {
+        color: #4caf50;
+        margin-bottom: 1rem;
+    }
+    
+    .completion-state p {
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="session-container">
+    <div class="session-header">
+        <h1>Interview Session</h1>
+        <div>
+            <span id="questionCounter">0/0</span>
+        </div>
+    </div>
+    
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    
+    <div class="session-info">
+        <div class="info-card">
+            <div class="info-label">Role</div>
+            <div class="info-value" id="roleDisplay">-</div>
+        </div>
+        <div class="info-card">
+            <div class="info-label">Difficulty</div>
+            <div class="info-value" id="difficultyDisplay">-</div>
+        </div>
+        <div class="info-card">
+            <div class="info-label">Questions</div>
+            <div class="info-value" id="totalQuestionsDisplay">0</div>
+        </div>
+    </div>
+    
+    <div id="alertContainer"></div>
+    
+    <div id="loadingState" class="alert alert-info">
+        Loading questions... <span class="loading show"></span>
+    </div>
+    
+    <div id="sessionContent" style="display: none;">
+        <div id="questionContainer"></div>
+        
+        <div id="completionState" style="display: none;">
+            <div class="completion-state">
+                <h2>Interview Complete!</h2>
+                <p>All questions answered. You can now view your report.</p>
+                <a href="/interview/report/" class="btn btn-primary">View Report</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentQuestionIndex = 0;
+    let questions = [];
+    let answers = [];
+    let interviewId = null;
+    
+    async function loadQuestions() {
+        const token = localStorage.getItem('access_token');
+        interviewId = localStorage.getItem('interview_id');
+
+    console.log("Token:", token);
+    console.log("Interview ID:", interviewId);
+        
+        if (!token || !interviewId) {
+            document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">Session expired. Please start a new interview.</div>';
+            setTimeout(() => {
+                window.location.href = '/interview/setup/';
+            }, 2000);
+            return;
+        }
+        
+        
+        try {
+            const response = await fetch(
+                `/api/interviews/${interviewId}/questions/`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            const data = await response.json();
+            
+            if (response.ok) {
+                questions = data.questions || data;
+                if (!Array.isArray(questions)) {
+                    questions = [questions];
+                }
+                answers = new Array(questions.length).fill('');
+                
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('sessionContent').style.display = 'block';
+                
+                document.getElementById('roleDisplay').textContent = localStorage.getItem('interview_role') || '-';
+                document.getElementById('difficultyDisplay').textContent = localStorage.getItem('interview_difficulty') || '-';
+                document.getElementById('totalQuestionsDisplay').textContent = questions.length;
+                
+                displayQuestion(0);
+            } else {
+                document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">Failed to load questions: ' + (data.detail || 'Unknown error') + '</div>';
+            }
+        } catch (error) {
+            document.getElementById('alertContainer').innerHTML = '<div class="alert alert-error">Error loading questions: ' + error.message + '</div>';
+        }
+    }
+    
+    function displayQuestion(index) {
+        if (index >= questions.length) {
+            document.getElementById('questionContainer').style.display = 'none';
+            document.getElementById('completionState').style.display = 'block';
+            return;
+        }
+        
+        currentQuestionIndex = index;
+        const question = questions[index];
+        
+        document.getElementById('questionCounter').textContent = (index + 1) + '/' + questions.length;
+        document.getElementById('progressFill').style.width = ((index + 1) / questions.length * 100) + '%';
+        
+        const questionContainer = document.getElementById('questionContainer');
+        
+        const questionText = typeof question === 'string' ? question : (question.question || question.text || '');
+        
+        let html = '<div class="question-container">';
+        html += '<div class="question-text">' + escapeHtml(questionText) + '</div>';
+        html += '<textarea class="answer-input" id="answerInput" placeholder="Type your answer here...">' + escapeHtml(answers[index]) + '</textarea>';
+        html += '<div class="button-group">';
+        
+        if (index > 0) {
+            html += '<button type="button" class="btn btn-secondary" onclick="previousQuestion()">Previous</button>';
+        }
+        
+        if (index < questions.length - 1) {
+            html += '<button type="button" class="btn btn-primary" onclick="nextQuestion()">Next Question</button>';
+        } else {
+            html += '<button type="button" class="btn btn-primary" onclick="submitAnswer()"><span id="submitBtnText">Submit & Complete</span><span class="loading" id="submitLoading"></span></button>';
+        }
+        
+        html += '</div></div>';
+        questionContainer.innerHTML = html;
+    }
+    
+    function previousQuestion() {
+        saveCurrentAnswer();
+        if (currentQuestionIndex > 0) {
+            displayQuestion(currentQuestionIndex - 1);
+        }
+    }
+    
+    function nextQuestion() {
+        saveCurrentAnswer();
+        if (currentQuestionIndex < questions.length - 1) {
+            displayQuestion(currentQuestionIndex + 1);
+        }
+    }
+    
+    function saveCurrentAnswer() {
+        const answerInput = document.getElementById('answerInput');
+        if (answerInput) {
+            answers[currentQuestionIndex] = answerInput.value;
+        }
+    }
+    
+    async function submitAnswer() {
+        saveCurrentAnswer();
+
+        const token = localStorage.getItem('access_token');
+        const submitBtn = event.target.closest('.btn-primary');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const submitLoading = document.getElementById('submitLoading');
+
+        submitBtn.disabled = true;
+        submitBtnText.textContent = '';
+        submitLoading.classList.add('show');
+
+        try {
+            // Submit one answer per request to match backend expectations.
+            for (let i = 0; i < answers.length; i++) {
+                const rawQuestion = questions[i];
+                const questionText = typeof rawQuestion === 'string'
+                    ? rawQuestion
+                    : (rawQuestion && (rawQuestion.question || rawQuestion.text))
+                        ? (rawQuestion.question || rawQuestion.text)
+                        : '';
+
+                if (!questionText) {
+                    console.warn(`[submitAnswer] Empty question text at index ${i}`);
+                }
+
+
+                const payload = {
+                    interview_id: interviewId,
+                    question: questionText,
+                    user_answer: answers[i]
+                };
+
+                console.log(`[submitAnswer] Submitting answer ${i + 1}/${answers.length}`, payload);
+
+                const response = await fetch(
+                    `/api/interviews/submit-answer/`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify(payload)
+                    }
+                );
+
+                let data = null;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    // Non-JSON response
+                }
+
+                if (!response.ok) {
+                    console.error(`[submitAnswer] Failed at index ${i}`, { status: response.status, data });
+                    document.getElementById('alertContainer').innerHTML =
+                        '<div class="alert alert-error">Failed to submit answer ' + (i + 1) + ': ' +
+                        ((data && (data.detail || data.error)) ? (data.detail || data.error) : 'Unknown error') +
+                        '</div>';
+                    return; // stop further submissions
+                }
+
+                console.log(`[submitAnswer] Successfully submitted answer ${i + 1}/${answers.length}`, data);
+            }
+
+            // Redirect to report page only after all answers succeed.
+            window.location.href = '/interview/report/';
+        } catch (error) {
+            console.error('[submitAnswer] Error submitting answers:', error);
+            document.getElementById('alertContainer').innerHTML =
+                '<div class="alert alert-error">Error submitting answers: ' + error.message + '</div>';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtnText.textContent = 'Submit & Complete';
+            submitLoading.classList.remove('show');
+        }
+    }
+
+    
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+    
+    document.addEventListener('DOMContentLoaded', loadQuestions);
+</script>
+{% endblock %}
